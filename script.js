@@ -32,6 +32,7 @@ class Screen {
     this.currentFrame = 0;
     this.lastFrameTime = 0;
     this.rendered = false;
+    this.eventHandlers = {};
 
     let canvasList = document.getElementsByClassName("canvas");
     if (canvasList.length < numCanvases) {
@@ -47,7 +48,6 @@ class Screen {
       this.contextList.push(canvasList[i].getContext("2d"));
     }
 
-    this.eventHandlers = {};
     this.addEvents();
   }
 
@@ -74,7 +74,6 @@ class Screen {
   }
 
   async show() {
-    this.resize();
     await this.loadData();
     this.setAnimate();
   }
@@ -86,7 +85,7 @@ class Screen {
 
   setAnimate() {
     const animate = (timestamp) => {
-      this.render(timestamp, this.animationFrameId);
+      this.render(timestamp);
       this.animationFrameId = requestAnimationFrame(animate);
     };
     this.animationFrameId = requestAnimationFrame(animate);
@@ -109,10 +108,7 @@ class Screen {
       this.lastFrameTime = timestamp;
       this.rendered = false;
     }
-    if (
-      this.images[this.currentFrame] != undefined &&
-      this.rendered === false
-    ) {
+    if (this.images[this.currentFrame] != undefined && !this.rendered) {
       this.rendering();
       this.rendered = true;
     }
@@ -137,18 +133,22 @@ class IntroPage extends Screen {
     this.frameDuration = 1000 / fps;
   }
 
-  loadData = () => {
-    return new Promise((resolve, reject) => {
-      this.imagePaths.forEach((path, index) => {
-        const img = new Image();
-        img.src = path;
-        img.onload = () => {
-          this.images[index] = img;
-        };
-      });
-      resolve();
-    });
-  };
+  async loadData() {
+    try {
+      this.images = await Promise.all(
+        this.imagePaths.map((path) => {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = path;
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+          });
+        })
+      );
+    } catch (error) {
+      console.error("Error loading images", error);
+    }
+  }
 
   addEvents() {
     super.addEvents();
