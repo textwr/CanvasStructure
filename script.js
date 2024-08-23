@@ -27,7 +27,7 @@ class Screen {
     this.canvasList = [];
     this.contextList = [];
     this.animationFrameId = null;
-    this.frameDuration = 1000 / fps;
+    this.frameDuration = 1000 / fps; //일일히 설정 따로 해줘야함
     this.images = [];
     this.currentFrame = 0;
     this.lastFrameTime = 0;
@@ -99,7 +99,26 @@ class Screen {
     }
   }
 
-  render() {}
+  render(timestamp) {
+    if (this.lastFrameTime === 0) this.lastFrameTime = timestamp;
+
+    const elapsedTime = timestamp - this.lastFrameTime;
+
+    if (elapsedTime >= this.frameDuration) {
+      this.currentFrame = (this.currentFrame + 1) % this.images.length;
+      this.lastFrameTime = timestamp;
+      this.rendered = false;
+    }
+    if (
+      this.images[this.currentFrame] != undefined &&
+      this.rendered === false
+    ) {
+      this.rendering();
+      this.rendered = true;
+    }
+  }
+
+  rendering() {}
 
   resize() {
     this.canvasList.forEach((canvas) => {
@@ -112,9 +131,8 @@ class Screen {
 class IntroPage extends Screen {
   constructor(main, fps = 10) {
     super(main);
-    this.imagePaths = Array.from(
-      { length: 40 },
-      (_, i) => `./images/11zon_${i + 1}.jpeg`
+    this.imagePaths = [...Array(40).keys()].map(
+      (i) => `./images/IntroPage/11zon_${i + 1}.jpeg`
     );
     this.frameDuration = 1000 / fps;
   }
@@ -150,31 +168,17 @@ class IntroPage extends Screen {
     }
   }
 
-  render(timestamp, frame, ctx) {
-    if (this.lastFrameTime === 0) this.lastFrameTime = timestamp;
-
-    const elapsedTime = timestamp - this.lastFrameTime;
-
-    if (elapsedTime >= this.frameDuration) {
-      this.currentFrame = (this.currentFrame + 1) % this.images.length;
-      this.lastFrameTime = timestamp;
-      this.rendered = false;
-    }
-    if (
-      this.images[this.currentFrame] != undefined &&
-      this.rendered === false
-    ) {
-      const canvasWidth = this.canvasList[0].width;
-      const canvasHeight = this.canvasList[0].height;
-      this.contextList[0].drawImage(
-        this.images[this.currentFrame],
-        0,
-        0,
-        canvasWidth,
-        canvasHeight
-      );
-      this.rendered = true;
-    }
+  rendering() {
+    const canvasWidth = this.canvasList[0].width;
+    const canvasHeight = this.canvasList[0].height;
+    this.contextList[0].drawImage(
+      this.images[this.currentFrame],
+      0,
+      0,
+      canvasWidth,
+      canvasHeight
+    );
+    this.rendered = true;
   }
 }
 
